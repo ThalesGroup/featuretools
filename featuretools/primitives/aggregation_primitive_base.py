@@ -52,6 +52,14 @@ class AggregationPrimitive(PrimitiveBase):
             where_str = ''
         return where_str
 
+    def __repr__(self):
+        ret = "<Feature: name = {}, table = {}, function = {}>".format(self.get_name(), self.entity.id, self.get_function_name())
+        # encode for python 2
+        if type(ret) != str:
+            ret = ret.encode("utf-8")
+
+        return ret
+
     def _use_prev_str(self):
         if self.use_previous is not None:
             use_prev_str = u", Last {}".format(self.use_previous.get_name())

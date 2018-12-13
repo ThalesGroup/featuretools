@@ -11,6 +11,7 @@ import pandas as pd
 
 from .primitive_base import PrimitiveBase
 from .utils import inspect_function_args
+from .aggregation_primitives import IndicatorCount, ValueCount
 
 from featuretools.variable_types import (
     Boolean,
@@ -52,6 +53,13 @@ class TransformPrimitive(PrimitiveBase):
         name += u", ".join(f.get_name() for f in self.base_features)
         name += u")"
         return name
+
+    def __repr__(self):
+        ret = "<Feature: name = {}, table = {}, function = {}>".format(self.get_name(), self.entity.id, self.get_function_name())
+        # encode for python 2
+        if type(ret) != str:
+            ret = ret.encode("utf-8")
+        return ret
 
     @property
     def default_value(self):
@@ -160,6 +168,27 @@ class IsNull(TransformPrimitive):
     def get_function(self):
         return lambda array: pd.isnull(pd.Series(array))
 
+    def get_function_name(self):
+        return u"IsNull"
+
+class Log(TransformPrimitive):
+    """Absolute value of base feature."""
+    name = "log"
+    input_types = [Numeric]
+    return_type = Numeric
+
+    def get_function_name(self):
+        return u"Log"
+
+# class PlusOneLog(TransformPrimitive):
+#     """Absolute value of base feature."""
+#     name = "plusonelog"
+#     input_types = [Numeric]
+#     return_type = Numeric
+#
+#     def get_function_name(self):
+#         return u"PlusOneLog"
+
 
 class Absolute(TransformPrimitive):
     """Absolute value of base feature."""
@@ -170,6 +199,8 @@ class Absolute(TransformPrimitive):
     def get_function(self):
         return lambda array: np.absolute(array)
 
+    def get_function_name(self):
+        return u"Absolute"
 
 class TimeSincePrevious(TransformPrimitive):
     """Compute the time since the previous instance."""
@@ -195,6 +226,9 @@ class TimeSincePrevious(TransformPrimitive):
     def generate_name(self):
         return u"time_since_previous_by_%s" % self.group_feature.get_name()
 
+    def get_function_name(self):
+        return u"TimeSincePrevious"
+
     def get_function(self):
         def pd_diff(base_array, group_array):
             bf_name = 'base_feature'
@@ -212,10 +246,14 @@ class DatetimeUnitBasePrimitive(TransformPrimitive):
     name = None
     input_types = [Datetime]
     return_type = Ordinal
+    base_of_exclude = [IndicatorCount, ValueCount]
+
 
     def get_function(self):
         return lambda array: pd_time_unit(self.name)(pd.DatetimeIndex(array))
 
+    def get_function_name(self):
+        return u"DatetimeUnitBasePrimitive"
 
 class TimedeltaUnitBasePrimitive(TransformPrimitive):
     """Transform Timedelta features into number of time units
@@ -227,101 +265,143 @@ class TimedeltaUnitBasePrimitive(TransformPrimitive):
     def get_function(self):
         return lambda array: pd_time_unit(self.name)(pd.TimedeltaIndex(array))
 
+    def get_function_name(self):
+        return u"TimedeltaUnitBasePrimitive"
 
 class Day(DatetimeUnitBasePrimitive):
     """Transform a Datetime feature into the day."""
     name = "day"
 
+    def get_function_name(self):
+        return u"Day"
 
 class Days(TimedeltaUnitBasePrimitive):
     """Transform a Timedelta feature into the number of days."""
     name = "days"
 
 
+    def get_function_name(self):
+        return u"Days"
+
 class Hour(DatetimeUnitBasePrimitive):
     """Transform a Datetime feature into the hour."""
     name = "hour"
 
 
+    def get_function_name(self):
+        return u"Hour"
+
 class Hours(TimedeltaUnitBasePrimitive):
     """Transform a Timedelta feature into the number of hours."""
     name = "hours"
+
 
     def get_function(self):
         def pd_hours(array):
             return pd_time_unit("seconds")(pd.TimedeltaIndex(array)) / 3600.
         return pd_hours
 
+    def get_function_name(self):
+        return u"Hours"
 
 class Second(DatetimeUnitBasePrimitive):
     """Transform a Datetime feature into the second."""
     name = "second"
 
 
+    def get_function_name(self):
+        return u"TimeSincePrevious"
+
 class Seconds(TimedeltaUnitBasePrimitive):
     """Transform a Timedelta feature into the number of seconds."""
     name = "seconds"
 
+
+    def get_function_name(self):
+        return u"Second"
 
 class Minute(DatetimeUnitBasePrimitive):
     """Transform a Datetime feature into the minute."""
     name = "minute"
 
 
+    def get_function_name(self):
+        return u"TimeSincePrevious"
+
 class Minutes(TimedeltaUnitBasePrimitive):
     """Transform a Timedelta feature into the number of minutes."""
     name = "minutes"
+
 
     def get_function(self):
         def pd_minutes(array):
             return pd_time_unit("seconds")(pd.TimedeltaIndex(array)) / 60
         return pd_minutes
 
+    def get_function_name(self):
+        return u"Minute"
 
 class Week(DatetimeUnitBasePrimitive):
     """Transform a Datetime feature into the week."""
     name = "week"
 
 
+    def get_function_name(self):
+        return u"Week"
+
 class Weeks(TimedeltaUnitBasePrimitive):
     """Transform a Timedelta feature into the number of weeks."""
     name = "weeks"
+
 
     def get_function(self):
         def pd_weeks(array):
             return pd_time_unit("days")(pd.TimedeltaIndex(array)) / 7
         return pd_weeks
 
+    def get_function_name(self):
+        return u"Weeks"
 
 class Month(DatetimeUnitBasePrimitive):
     """Transform a Datetime feature into the month."""
     name = "month"
 
+    def get_function_name(self):
+        return u"Month"
 
 class Months(TimedeltaUnitBasePrimitive):
     """Transform a Timedelta feature into the number of months."""
     name = "months"
+
 
     def get_function(self):
         def pd_months(array):
             return pd_time_unit("days")(pd.TimedeltaIndex(array)) * (12 / 365)
         return pd_months
 
+    def get_function_name(self):
+        return u"Months"
 
 class Year(DatetimeUnitBasePrimitive):
     """Transform a Datetime feature into the year."""
     name = "year"
 
 
+    def get_function_name(self):
+        return u"Year"
+
 class Years(TimedeltaUnitBasePrimitive):
     """Transform a Timedelta feature into the number of years."""
     name = "years"
+
 
     def get_function(self):
         def pd_years(array):
             return pd_time_unit("days")(pd.TimedeltaIndex(array)) / 365
         return pd_years
 
+    def get_function_name(self):
+        return u"Years"
 
 class Weekend(TransformPrimitive):
     """Transform Datetime feature into the boolean of Weekend."""
@@ -329,25 +409,34 @@ class Weekend(TransformPrimitive):
     input_types = [Datetime]
     return_type = Boolean
 
+
     def get_function(self):
         return lambda df: pd_time_unit("weekday")(pd.DatetimeIndex(df)) > 4
 
+    def get_function_name(self):
+        return u"Weekend"
 
 class Weekday(DatetimeUnitBasePrimitive):
     """Transform Datetime feature into the boolean of Weekday."""
     name = "weekday"
 
 
+    def get_function_name(self):
+        return u"Weekday"
+
+
 class NumCharacters(TransformPrimitive):
     """Return the characters in a given string.
     """
-    name = 'characters'
+    name = 'numcharacters'
     input_types = [Text]
     return_type = Numeric
 
     def get_function(self):
         return lambda array: pd.Series(array).fillna('').str.len()
 
+    def get_function_name(self):
+        return u"NumCharacters"
 
 class NumWords(TransformPrimitive):
     """Returns the words in a given string by counting the spaces.
@@ -361,6 +450,8 @@ class NumWords(TransformPrimitive):
             return pd.Series(array).fillna('').str.count(' ') + 1
         return word_counter
 
+    def get_function_name(self):
+        return u"NumWords"
 
 # class Like(TransformPrimitive):
 #     """Equivalent to SQL LIKE(%text%)
@@ -430,6 +521,8 @@ class DaysSince(TransformPrimitive):
             return pd_time_unit('days')(time - pd.DatetimeIndex(array))
         return pd_days_since
 
+    def get_function_name(self):
+        return u"DaysSince"
 
 class IsIn(TransformPrimitive):
     """For each value of the base feature, checks whether it is in a provided list.
@@ -453,6 +546,8 @@ class IsIn(TransformPrimitive):
         return u"%s.isin(%s)" % (self.base_features[0].get_name(),
                                  str(self.list_of_outputs))
 
+    def get_function_name(self):
+        return u"IsIn"
 
 class Diff(TransformPrimitive):
     """Compute the difference between the value of a base feature and the previous value.
@@ -474,6 +569,9 @@ class Diff(TransformPrimitive):
         """
         self.group_feature = self._check_feature(group_feature)
         super(Diff, self).__init__(base_feature, group_feature)
+
+    def get_function_name(self):
+        return u"Diff"
 
     def generate_name(self):
         base_features_str = self.base_features[0].get_name() + u" by " + \
@@ -510,6 +608,8 @@ class Not(TransformPrimitive):
     def get_function(self):
         return lambda array: np.logical_not(array)
 
+    def get_function_name(self):
+        return u"Not"
 
 class Percentile(TransformPrimitive):
     """For each value of the base feature, determines the percentile in relation
@@ -523,12 +623,13 @@ class Percentile(TransformPrimitive):
     def get_function(self):
         return lambda array: pd.Series(array).rank(pct=True)
 
+    def get_function_name(self):
+        return u"Percentile"
 
 def pd_time_unit(time_unit):
     def inner(pd_index):
         return getattr(pd_index, time_unit).values
     return inner
-
 
 class Latitude(TransformPrimitive):
     """Returns the first value of the tuple base feature.
@@ -541,6 +642,8 @@ class Latitude(TransformPrimitive):
     def get_function(self):
         return lambda array: pd.Series([x[0] for x in array])
 
+    def get_function_name(self):
+        return u"Latitude"
 
 class Longitude(TransformPrimitive):
     """Returns the second value on the tuple base feature.
@@ -553,6 +656,8 @@ class Longitude(TransformPrimitive):
     def get_function(self):
         return lambda array: pd.Series([x[1] for x in array])
 
+    def get_function_name(self):
+        return u"Longitude"
 
 class Haversine(TransformPrimitive):
     """Calculate the approximate haversine distance in miles between two LatLong variable types.
@@ -561,6 +666,9 @@ class Haversine(TransformPrimitive):
     input_types = [LatLong, LatLong]
     return_type = Numeric
     commutative = True
+
+    def get_function_name(self):
+        return u"Haversine"
 
     def get_function(self):
         def haversine(latlong1, latlong2):

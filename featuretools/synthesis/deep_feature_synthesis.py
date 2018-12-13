@@ -3,6 +3,7 @@ from builtins import filter, object, str
 from collections import defaultdict
 
 from past.builtins import basestring
+from typing import Dict, Any
 
 import featuretools.primitives.api as ftypes
 from featuretools import variable_types
@@ -132,9 +133,12 @@ class DeepFeatureSynthesis(object):
         self.es = entityset
 
         if agg_primitives is None:
-            agg_primitives = [ftypes.Sum, ftypes.Std, ftypes.Max, ftypes.Skew,
-                              ftypes.Min, ftypes.Mean, ftypes.Count,
-                              ftypes.PercentTrue, ftypes.NUnique, ftypes.Mode]
+            agg_primitives = [ftypes.Sum, ftypes.Stddev, ftypes.Max, ftypes.Skew,ftypes.NumTrue,ftypes.PercentTrue,ftypes.Skew,ftypes.Any,ftypes.All,
+                              ftypes.Min, ftypes.Avg, ftypes.Count, ftypes.ValueCount, ftypes.IndicatorCount, ftypes.NMostCommon, ftypes.Median,
+                              ftypes.TimeSinceLast,ftypes.Trend,
+                              ftypes.PercentTrue, ftypes.NUniq, ftypes.Mode, ftypes.Variance, ftypes.First, ftypes.Last]
+        # if agg_primitives is None:
+        #     agg_primitives = []
         self.agg_primitives = []
         agg_prim_dict = ftypes.get_aggregation_primitives()
         for a in agg_primitives:
@@ -146,11 +150,14 @@ class DeepFeatureSynthesis(object):
                 self.agg_primitives.append(agg_prim_dict[a.lower()])
             else:
                 self.agg_primitives.append(a)
-
+        ftypes.DatetimeUnitBasePrimitive.base_of_exclude = [ftypes.IndicatorCount, ftypes.ValueCount]
         if trans_primitives is None:
-            trans_primitives = [ftypes.Day, ftypes.Year, ftypes.Month,
-                                ftypes.Weekday, ftypes.Haversine,
-                                ftypes.NumWords, ftypes.NumCharacters]  # ftypes.TimeSince
+            trans_primitives = [ftypes.Day, ftypes.Year, ftypes.Years, ftypes.Month,ftypes.Months,ftypes.Weekend,ftypes.Diff,ftypes.Not,
+                                ftypes.Weekday, ftypes.Haversine,ftypes.IsNull, ftypes.IsIn,ftypes.Absolute,ftypes.TimeSincePrevious,ftypes.TimeSinceLast,
+                                ftypes.Days,ftypes.DaysSince,ftypes.Hour, ftypes.Hours, ftypes.Second, ftypes.Seconds,ftypes.Percentile,ftypes.Latitude,
+                                ftypes.Longitude, ftypes.NumWords, ftypes.NumCharacters, ftypes.Log]  # ftypes.TimeSince
+        # if trans_primitives is None:
+        #     trans_primitives = []  # ftypes.TimeSince
         self.trans_primitives = []
         trans_prim_dict = ftypes.get_transform_primitives()
         for t in trans_primitives:
@@ -200,7 +207,7 @@ class DeepFeatureSynthesis(object):
                 features for target entity, sorted by feature depth
                 (shallow first).
         """
-        all_features = {}
+        all_features = {}  # type: Dict[Any, Dict[Any, Any]]
         for e in self.es.entities:
             if e not in self.ignore_entities:
                 all_features[e.id] = {}
@@ -277,7 +284,7 @@ class DeepFeatureSynthesis(object):
         if verbose:
             print("Built {} features".format(len(new_features)))
             verbose = None
-        return new_features
+        return new_features, all_features
 
     def _filter_features(self, features):
         assert isinstance(self.drop_exact, list), "drop_exact must be a list"

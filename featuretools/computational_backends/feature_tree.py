@@ -1,8 +1,12 @@
 import copy
 import itertools
 import logging
+import pprint
 from builtins import object
-from collections import defaultdict
+from collections import (
+    defaultdict,
+    OrderedDict
+)
 
 from ..utils import gen_utils as utils
 
@@ -20,19 +24,28 @@ logger = logging.getLogger('featuretools.computational_backend')
 
 class FeatureTree(object):
 
-    def __init__(self, entityset, features, ignored=None):
+    def __init__(self, entityset, features, maxdepth=0, ignored=None):
+        self.maxdepth = maxdepth
         self.entityset = entityset
         self.target_eid = features[0].entity.id
         if ignored is None:
             self.ignored = set([])
         else:
             self.ignored = ignored
-
+        self.dag_path = []
+        self.feature_mapping = []
         self.feature_hashes = set([f.hash() for f in features])
-
+        self.feature_dependency_groups = []
+        self.table_feature_operations_mapping = {}
+        self.table_feature_operations_mapping_dag = OrderedDict()
         all_features = {f.hash(): f for f in features}
         feature_dependencies = {}
         feature_dependents = defaultdict(set)
+        self.all_paths_in_reverse = self.entityset.find_reverse_complete_path(self.target_eid)
+
+        self.entity_join_mapping = self.create_entity_join_mapping()
+        self._generate_entity_edge_map()
+        self._generate_entity_dag_map()
         for f in features:
             deps = f.get_deep_dependencies(ignored=ignored)
             feature_dependencies[f.hash()] = deps
@@ -44,6 +57,17 @@ class FeatureTree(object):
                 feature_dependencies[dep.hash()] = subdeps
                 for sd in subdeps:
                     feature_dependents[sd.hash()].add(dep.hash())
+            # dependencies = []
+            # for dp in reversed(feature_dependencies[f.hash()]):
+            #     dependencies.append(dp)
+            # dependencies.append(f)
+            # self.feature_dependency_groups.append(dependencies)
+            self.feature_mapping.append(repr(f) + " ==== " + repr(feature_dependencies[f.hash()]))
+            #print (repr(f) + " ==== " + repr(feature_dependencies[f.hash()]))
+            #print "\n"
+            self._generate_table_operations(f, feature_dependencies[f.hash()])
+
+        self._generate_table_operations_dag()
         # turn values which were hashes of features into the features themselves
         # (note that they were hashes to prevent checking equality of feature objects,
         #  which is not currently an allowed operation)
@@ -56,6 +80,112 @@ class FeatureTree(object):
         self._generate_feature_tree(features)
         self._order_entities()
         self._order_feature_groups()
+        self._pretty(self.table_feature_operations_mapping_dag)
+
+    def _pretty(self, d, indent=0):
+        for key, value in d.items():
+            print('\t' * indent + str(key))
+            if isinstance(value, dict):
+                self._pretty(value, indent + 1)
+            else:
+                print('\t' * (indent + 1) + str(value))
+
+    def _generate_entity_edge_map(self):
+        self.entity_edge = {}
+        for r in self.entityset.relationships:
+            self.entity_edge[r.child_entity.id + '->' + r.parent_entity.id] = None
+
+    def _generate_entity_dag_map(self):
+        self.entity_dag_map = {}
+        for r_list in self.all_paths_in_reverse:
+            for r in r_list:
+                if r.direction:
+                    self.entity_dag_map[r.child_entity.id + '->' + r.parent_entity.id] = None
+                else:
+                    self.entity_dag_map[r.parent_entity.id + '->' + r.child_entity.id] = None
+
+
+    def _generate_table_operations_dag(self):
+        level = 0
+        while level < self.maxdepth:
+            index = level
+            self.table_feature_operations_mapping_dag[level] = {}
+            if index in self.table_feature_operations_mapping:
+                for r_list in self.all_paths_in_reverse:
+                    for r in r_list:
+                        if r.child_entity.id in self.table_feature_operations_mapping[index]:
+                            self.table_feature_operations_mapping_dag[level][r.child_entity.id] = self.table_feature_operations_mapping[index][r.child_entity.id].keys()
+                        if r.parent_entity.id in self.table_feature_operations_mapping[index]:
+                            self.table_feature_operations_mapping_dag[level][r.parent_entity.id] = self.table_feature_operations_mapping[index][r.parent_entity.id].keys()
+                for r_list in self.all_paths_in_reverse:
+                    for r in r_list:
+                        if (r.child_entity.id + '->' + r.parent_entity.id) in self.table_feature_operations_mapping[index]:
+                            self.table_feature_operations_mapping_dag[level][r.child_entity.id + '->' + r.parent_entity.id] = self.table_feature_operations_mapping[index][r.child_entity.id + '->' + r.parent_entity.id].keys()
+                        if not r.direction:
+                            if (r.parent_entity.id + '->' + r.child_entity.id) in self.table_feature_operations_mapping[index]:
+                                self.table_feature_operations_mapping_dag[level][r.parent_entity.id + '->' + r.child_entity.id] = self.table_feature_operations_mapping[index][r.parent_entity.id + '->' + r.child_entity.id].keys()
+            level = level + 1
+
+    def create_entity_join_mapping(self):
+        entity_join_mapping = {}
+        for r_list in self.all_paths_in_reverse:
+            for r in r_list:
+                entity_join_mapping[r.child_entity.id + '->' + r.parent_entity.id] = r.child_entity.id + '.' + r.child_variable.id + '::' + r.parent_entity.id + '.' + r.parent_variable.id
+                if not r.direction:
+                    entity_join_mapping[r.parent_entity.id + '->' + r.child_entity.id] = r.parent_entity.id + '.' + r.parent_variable.id + '::' + r.child_entity.id + '.' + r.child_variable.id
+        return entity_join_mapping
+
+    def _generate_table_operations(self, f, feature_dependency):
+        if not feature_dependency:
+            return
+        index = 0
+        past_feature = f
+
+        for feat in reversed(feature_dependency):
+            if index > 0:
+                if (feat.entity.id != past_feature.entity.id) and (feat.entity.id + '->' + past_feature.entity.id) not in self.entity_edge and (past_feature.entity.id + '->' + feat.entity.id) not in self.entity_edge:
+                    return
+            index = index + 1
+            past_feature = feat
+
+        if (f.entity.id != past_feature.entity.id) and (f.entity.id + '->' + past_feature.entity.id) not in self.entity_edge and (past_feature.entity.id + '->' + f.entity.id) not in self.entity_edge:
+            return
+
+        index = 0
+        for feat in reversed(feature_dependency):
+            if index > 0:
+                self._populate_table_feature_operation(past_feature, feat, (index-1))
+            past_feature = feat
+            index = index+1
+        if index == 1:
+            index = 0
+        self._populate_table_feature_operation(past_feature, f, index)
+
+    def _populate_table_feature_operation(self, past_feature, current_feature, level):
+        if level not in self.table_feature_operations_mapping:
+            self.table_feature_operations_mapping[level] = {}
+            # print "initialized table "
+            # print level
+            # print self.table_feature_operations_mapping
+        if past_feature.entity.id == current_feature.entity.id:
+            if past_feature.entity.id not in self.table_feature_operations_mapping[level]:
+                self.table_feature_operations_mapping[level][past_feature.entity.id] = OrderedDict()
+                self.table_feature_operations_mapping[level][past_feature.entity.id]["Transformation"] = None
+            self.table_feature_operations_mapping[level][past_feature.entity.id][(past_feature.get_name() + ',' + current_feature.get_name() + ',' + current_feature.get_function_name()).encode("utf-8")] = None
+        else:
+            if (past_feature.entity.id + '->' + current_feature.entity.id) not in self.entity_edge and (current_feature.entity.id + '->' + past_feature.entity.id) in self.entity_edge:
+                if (past_feature.entity.id + '->' + current_feature.entity.id) not in self.table_feature_operations_mapping[level]:
+                    self.table_feature_operations_mapping[level][past_feature.entity.id + '->' + current_feature.entity.id] = OrderedDict()
+                    self.table_feature_operations_mapping[level][past_feature.entity.id + '->' + current_feature.entity.id]["Transformation"] = None
+                    self.table_feature_operations_mapping[level][past_feature.entity.id + '->' + current_feature.entity.id][self.entity_join_mapping[past_feature.entity.id + '->' + current_feature.entity.id]] = None
+                self.table_feature_operations_mapping[level][past_feature.entity.id + '->' + current_feature.entity.id][(past_feature.get_name() + ',' + current_feature.get_name()).encode("utf-8")] = None
+            else:
+                if (past_feature.entity.id + '->' + current_feature.entity.id) in self.entity_join_mapping:
+                    if (past_feature.entity.id + '->' + current_feature.entity.id) not in self.table_feature_operations_mapping[level]:
+                        self.table_feature_operations_mapping[level][past_feature.entity.id + '->' + current_feature.entity.id] = OrderedDict()
+                        self.table_feature_operations_mapping[level][past_feature.entity.id + '->' + current_feature.entity.id]["Group_By"] = None
+                        self.table_feature_operations_mapping[level][past_feature.entity.id + '->' + current_feature.entity.id][self.entity_join_mapping[past_feature.entity.id + '->' + current_feature.entity.id]] = None
+                    self.table_feature_operations_mapping[level][past_feature.entity.id + '->' + current_feature.entity.id][(past_feature.get_name() + ',' + current_feature.get_name() + ',' + current_feature.get_function_name()).encode("utf-8")] = None
 
     def _find_necessary_columns(self):
         # TODO: Can try to remove columns that are only used in the
@@ -101,13 +231,18 @@ class FeatureTree(object):
         # build a set of all features, including top-level features and
         # dependencies.
         self.top_level_features = defaultdict(list)
-
+        self.dag_features = []
+        path = []
         # find top-level features and index them by entity id.
         for f in self.all_features:
-            _, num_forward = self.entityset.find_path(self.target_eid, f.entity.id,
-                                                      include_num_forward=True)
+            path2 = []
+            path2, num_forward = self.entityset.find_path(self.target_eid, f.entity.id, include_num_forward=True)
             if num_forward or f.entity.id == self.target_eid:
                 self.top_level_features[f.entity.id].append(f)
+            else:
+                self.dag_path.append(path2)
+                self.dag_features.append(f)
+
 
     def _order_entities(self):
         """
@@ -115,7 +250,7 @@ class FeatureTree(object):
         The resulting order allows each entity to be calculated after all of its
         dependencies.
         """
-        entity_deps = defaultdict(set)
+        self.entity_deps = defaultdict(set)
         for e, features in self.top_level_features.items():
             # iterate over all dependency features of the top-level features on
             # this entity. If any of these are themselves top-level features, add
@@ -126,11 +261,11 @@ class FeatureTree(object):
                 _, num_forward = self.entityset.find_path(e, d.entity.id,
                                                           include_num_forward=True)
                 if num_forward > 0:
-                    entity_deps[e].add(d.entity.id)
+                    self.entity_deps[e].add(d.entity.id)
 
         # Do a top-sort on the new entity DAG
         self.ordered_entities = utils.topsort([self.target_eid],
-                                              lambda e: entity_deps[e])
+                                              lambda e: self.entity_deps[e])
 
     def _order_feature_groups(self):
         """

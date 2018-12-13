@@ -24,7 +24,7 @@ class PrimitiveBase(object):
     input_types = None
     #: (:class:`.Variable`): variable type of return
     return_type = None
-    #: Default value this feature returns if no data found. deafults to np.nan
+    #: Default value this feature returns if no data found. defaults to np.nan
     default_value = nan
     #: (bool): True if feature needs to know what the current calculation time
     # is (provided to computational backend as "time_last")
@@ -116,13 +116,15 @@ class PrimitiveBase(object):
         raise Exception("Not a feature")
 
     def __repr__(self):
-        ret = "<Feature: %s>" % (self.get_name())
-
+        ret = "<Feature: name = {}, table = {}>".format(self.get_name(), self.entity.id)
         # encode for python 2
         if type(ret) != str:
             ret = ret.encode("utf-8")
 
         return ret
+
+    def get_function_name(self):
+        return u"NONE"
 
     def hash(self):
         return hash(self.get_name() + self.entity.id)
@@ -351,6 +353,9 @@ class PrimitiveBase(object):
 
     def get_function(self):
         raise NotImplementedError("Implement in subclass")
+
+    def get_function_name(self):
+        return u"NONE"
 
     def get_dependencies(self, deep=False, ignored=None, copy=True):
         """Returns features that are used to calculate this feature

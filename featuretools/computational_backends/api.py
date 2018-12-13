@@ -6,4 +6,5 @@ from .calculate_feature_matrix import (
     calculate_feature_matrix,
     get_next_chunk
 )
+from .feature_tree import FeatureTree
 from .pandas_backend import PandasBackend

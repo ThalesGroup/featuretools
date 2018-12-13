@@ -27,6 +27,15 @@ class BFSNode(object):
         self.parent = parent
         self.relationship = relationship
 
+    def __repr__(self):
+        #ret = "<entity_id = {}, parent = {}, relationship = {}>".format(self.entity_id, self.parent.entity_id, repr(self.relationship))
+        ret = "<entity_id = {}>".format(self.entity_id)
+        # encode for python 2
+        if type(ret) != str:
+            ret = ret.encode("utf-8")
+
+        return ret
+
     def build_path(self):
         path = []
         cur_node = self
@@ -49,6 +58,14 @@ class BFSNode(object):
             num_forward = 0
         return path, num_forward
 
+    def build_relation_path_in_reverse(self):
+        path = []
+        cur_node = self
+        while cur_node.parent is not None:
+            path.append(cur_node.relationship)
+            cur_node = cur_node.parent
+
+        return path
 
 class EntitySet(object):
     """
@@ -500,6 +517,56 @@ class EntitySet(object):
         raise ValueError(("No path from {} to {}! Check that all entities "
                           .format(start_entity_id, goal_entity_id)),
                          "are connected by relationships")
+
+    def find_reverse_complete_path(self, start_entity_id):
+        """Find a path in the entityset represented as a DAG
+           between start_entity and goal_entity
+
+        Args:
+            start_entity_id (str) : Id of entity to start the search from.
+
+        Returns:
+            List of relationships that go from start entity to goal
+                entity. None is returned if no path exists.
+            If include_forward_distance is True,
+                returns a tuple of (relationship_list, forward_distance).
+
+        See Also:
+            :func:`BaseEntitySet.find_forward_path`
+            :func:`BaseEntitySet.find_backward_path`
+        """
+        all_paths = []
+        # BFS so we get shortest path
+        start_node = BFSNode(start_entity_id, None, None)
+        queue = [start_node]
+        nodes = {}
+
+        while len(queue) > 0:
+            current_node = queue.pop(0)
+            no_child = True
+            nodes[start_entity_id] = None
+
+            for r in self.get_forward_relationships(current_node.entity_id):
+                if r.parent_entity.id not in nodes:
+                    parent_node = BFSNode(r.parent_entity.id, current_node, r)
+                    nodes[r.parent_entity.id] = parent_node
+                    queue.append(parent_node)
+                    r.set_direction(False)
+                    no_child = False
+
+            for r in self.get_backward_relationships(current_node.entity_id):
+                if r.child_entity.id not in nodes:
+                    child_node = BFSNode(r.child_entity.id, current_node, r)
+                    nodes[r.child_entity.id] = child_node
+                    queue.append(child_node)
+                    no_child = False
+
+            if no_child:
+                path = current_node.build_relation_path_in_reverse()
+                all_paths.append(path)
+
+        return all_paths
+
 
     def find_forward_path(self, start_entity_id, goal_entity_id):
         """Find a forward path between a start and goal entity

@@ -21,15 +21,16 @@ class Relationship(object):
         self._child_entity_id = child_variable.entity.id
         self._parent_variable_id = parent_variable.id
         self._child_variable_id = child_variable.id
+        self._direction = True
 
         if (parent_variable.entity.index is not None and
                 parent_variable.id != parent_variable.entity.index):
             raise AttributeError("Parent variable '%s' is not the index of entity %s" % (parent_variable, parent_variable.entity))
 
     def __repr__(self):
-        ret = u"<Relationship: %s.%s -> %s.%s>" % \
+        ret = u"<Relationship: %s.%s -> %s.%s, %s>" % \
             (self._child_entity_id, self._child_variable_id,
-             self._parent_entity_id, self._parent_variable_id)
+             self._parent_entity_id, self._parent_variable_id, self._direction)
 
         # encode for python 2
         if type(ret) != str:
@@ -66,6 +67,10 @@ class Relationship(object):
         """Instance of variable in child entity"""
         return self.child_entity[self._child_variable_id]
 
+    @property
+    def direction(self):
+        return self._direction
+
     def get_entity_variable(self, entity_id):
         if self._child_entity_id == entity_id:
             return self._child_variable_id
@@ -89,6 +94,9 @@ class Relationship(object):
             return self._child_variable_id
         raise AttributeError("Variable '%s' is not part of relationship" %
                              variable_id)
+
+    def set_direction(self, direction):
+        self._direction = direction
 
     @classmethod
     def _get_link_variable_name(cls, path):

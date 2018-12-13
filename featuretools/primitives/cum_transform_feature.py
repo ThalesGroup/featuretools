@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from past.builtins import basestring
 
-from .aggregation_primitives import Count, Max, Mean, Min, Sum
+from .aggregation_primitives import Count, Max, Avg, Min, Sum
 from .primitive_base import IdentityFeature, PrimitiveBase
 from .transform_primitive import TransformPrimitive
 from .utils import apply_dual_op_from_feat
@@ -100,9 +100,9 @@ class CumMean(CumFeature):
     """Calculates the mean of previous values of an instance for each value in a time-dependent entity.
     """
     name = "cum_mean"
-    rolling_func_name = "mean"
+    rolling_func_name = "avg"
     default_value = 0
-    agg_feature = Mean
+    agg_feature = Avg
     input_types = [[Numeric, Id, TimeIndex],
                    [Numeric, Discrete, TimeIndex]]
 

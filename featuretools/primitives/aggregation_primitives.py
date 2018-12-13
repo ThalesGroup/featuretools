@@ -54,6 +54,9 @@ class Count(AggregationPrimitive):
         return u"COUNT(%s%s%s)" % (self.child_entity.id,
                                    where_str, use_prev_str)
 
+    def get_function_name(self):
+        return u"COUNT"
+
 
 class Sum(AggregationPrimitive):
     """Counts the number of elements of a numeric or boolean feature."""
@@ -69,16 +72,30 @@ class Sum(AggregationPrimitive):
             return np.nan_to_num(x.values).sum(dtype=np.float)
         return sum_func
 
+    def get_function_name(self):
+        return u"SUM"
 
-class Mean(AggregationPrimitive):
+class Variance(AggregationPrimitive):
+    name = "variance"
+    input_types = [Numeric]
+    return_type = Numeric
+    stack_on_self = False
+
+    def get_function_name(self):
+        return u"VARIANCE"
+
+class Avg(AggregationPrimitive):
     """Computes the average value of a numeric feature."""
-    name = "mean"
+    name = "avg"
     input_types = [Numeric]
     return_type = Numeric
 
     # p todo: handle nulls
     def get_function(self):
         return np.nanmean
+
+    def get_function_name(self):
+        return u"Avg"
 
 
 class Mode(AggregationPrimitive):
@@ -94,27 +111,32 @@ class Mode(AggregationPrimitive):
             return x.mode().iloc[0]
         return pd_mode
 
-
-Min = make_agg_primitive(
-    np.min,
-    [Numeric],
-    None,
-    name="min",
-    stack_on_self=False,
-    description="Finds the minimum non-null value of a numeric feature.")
+    def get_function_name(self):
+        return u"MODE"
 
 
-# class Min(AggregationPrimitive):
-#     """Finds the minimum non-null value of a numeric feature."""
-#     name = "min"
-#     input_types =  [Numeric]
-#     return_type = None
-#     # max_stack_depth = 1
-#     stack_on_self = False
+# Min = make_agg_primitive(
+#     np.min,
+#     [Numeric],
+#     None,
+#     name="min",
+#     stack_on_self=False,
+#     description="Finds the minimum non-null value of a numeric feature.")
 
-#     def get_function(self):
-#         return np.min
 
+class Min(AggregationPrimitive):
+    """Finds the minimum non-null value of a numeric feature."""
+    name = "min"
+    input_types = [Numeric]
+    return_type = None
+    # max_stack_depth = 1
+    stack_on_self = False
+
+    def get_function(self):
+        return np.min
+
+    def get_function_name(self):
+        return u"Min"
 
 class Max(AggregationPrimitive):
     """Finds the maximum non-null value of a numeric feature."""
@@ -127,10 +149,13 @@ class Max(AggregationPrimitive):
     def get_function(self):
         return np.max
 
+    def get_function_name(self):
+        return u"MAX"
 
-class NUnique(AggregationPrimitive):
+
+class NUniq(AggregationPrimitive):
     """Returns the number of unique categorical variables."""
-    name = "num_unique"
+    name = "nuniq"
     # todo can we use discrete in input_types instead?
     input_types = [Discrete]
     return_type = Numeric
@@ -139,6 +164,33 @@ class NUnique(AggregationPrimitive):
 
     def get_function(self):
         return lambda x: x.nunique()
+
+    def get_function_name(self):
+        return u"NUNIQ"
+
+class ValueCount(AggregationPrimitive):
+    """Returns the number of unique categorical variables."""
+    name = "valuecount"
+    input_types = [Discrete]
+    return_type = Numeric
+    stack_on_self = False
+    max_stack_depth = 1
+
+    def get_function_name(self):
+        return u"VALUECOUNT"
+
+
+class IndicatorCount(AggregationPrimitive):
+    """Returns the number of unique categorical variables."""
+    name = "indicatorcount"
+    # todo can we use discrete in input_types instead?
+    input_types = [Discrete]
+    return_type = Numeric
+    stack_on_self = False
+    max_stack_depth = 1
+
+    def get_function_name(self):
+        return u"INDICATORCOUNT"
 
 
 class NumTrue(AggregationPrimitive):
@@ -154,6 +206,9 @@ class NumTrue(AggregationPrimitive):
         def num_true(x):
             return np.nan_to_num(x.values).sum()
         return num_true
+
+    def get_function_name(self):
+        return u"NUMTRUE"
 
 
 class PercentTrue(AggregationPrimitive):
@@ -171,6 +226,9 @@ class PercentTrue(AggregationPrimitive):
                 return np.nan
             return np.nan_to_num(x.values).sum(dtype=np.float) / len(x)
         return percent_true
+
+    def get_function_name(self):
+        return u"PERCENTTRUE"
 
 
 class NMostCommon(AggregationPrimitive):
@@ -201,6 +259,9 @@ class NMostCommon(AggregationPrimitive):
         def pd_topn(x, n=self.n):
             return np.array(x.value_counts()[:n].index)
         return pd_topn
+
+    def get_function_name(self):
+        return u"NMostCommon"
 
 
 class AvgTimeBetween(AggregationPrimitive):
@@ -247,6 +308,9 @@ class AvgTimeBetween(AggregationPrimitive):
             return avg
         return pd_avg_time_between
 
+    def get_function_name(self):
+        return u"AvgTimeBetween"
+
 
 class Median(AggregationPrimitive):
     """Finds the median value of any feature with well-ordered values."""
@@ -257,6 +321,9 @@ class Median(AggregationPrimitive):
 
     def get_function(self):
         return lambda x: x.median()
+
+    def get_function_name(self):
+        return u"Median"
 
 
 class Skew(AggregationPrimitive):
@@ -276,11 +343,14 @@ class Skew(AggregationPrimitive):
     def get_function(self):
         return skew
 
+    def get_function_name(self):
+        return u"Skew"
 
-class Std(AggregationPrimitive):
+
+class Stddev(AggregationPrimitive):
     """Finds the standard deviation of a numeric feature ignoring null values.
     """
-    name = "std"
+    name = "stddev"
     input_types = [Numeric]
     return_type = Numeric
     # max_stack_depth = 2
@@ -289,6 +359,8 @@ class Std(AggregationPrimitive):
     def get_function(self):
         return np.nanstd
 
+    def get_function_name(self):
+        return u"Stddev"
 
 class Last(AggregationPrimitive):
     """Returns the last value."""
@@ -303,6 +375,19 @@ class Last(AggregationPrimitive):
             return x.iloc[-1]
         return pd_last
 
+    def get_function_name(self):
+        return u"Last"
+
+class First(AggregationPrimitive):
+    """Returns the last value."""
+    name = "first"
+    input_types = [Variable]
+    return_type = None
+    stack_on_self = False
+    # max_stack_depth = 1
+
+    def get_function_name(self):
+        return u"First"
 
 class Any(AggregationPrimitive):
     """Test if any value is 'True'."""
@@ -314,6 +399,8 @@ class Any(AggregationPrimitive):
     def get_function(self):
         return np.any
 
+    def get_function_name(self):
+        return u"Any"
 
 class All(AggregationPrimitive):
     """Test if all values are 'True'."""
@@ -325,6 +412,8 @@ class All(AggregationPrimitive):
     def get_function(self):
         return np.all
 
+    def get_function_name(self):
+        return u"All"
 
 class TimeSinceLast(AggregationPrimitive):
     """Time since last related instance."""
@@ -341,6 +430,8 @@ class TimeSinceLast(AggregationPrimitive):
 
         return time_since_last
 
+    def get_function_name(self):
+        return u"TimeSinceLast"
 
 class Trend(AggregationPrimitive):
     """Calculates the slope of the linear trend of variable overtime."""
@@ -354,6 +445,9 @@ class Trend(AggregationPrimitive):
         super(Trend, self).__init__(base_features,
                                     parent_entity,
                                     **kwargs)
+
+    def get_function_name(self):
+        return u"Trend"
 
     def get_function(self):
         def pd_trend(y, x):

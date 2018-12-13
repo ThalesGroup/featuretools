@@ -42,7 +42,7 @@ class PandasBackend(ComputationalBackend):
         self.entityset = entityset
         self.target_eid = features[0].entity.id
         self.features = features
-        self.feature_tree = FeatureTree(entityset, features)
+        self.feature_tree = FeatureTree(entityset, features, 0)
 
     def __sizeof__(self):
         return self.entityset.__sizeof__()
@@ -93,7 +93,7 @@ class PandasBackend(ComputationalBackend):
         if ignored:
             # TODO: Just want to remove entities if don't have any (sub)features defined
             # on them anymore, rather than recreating
-            ordered_entities = FeatureTree(self.entityset, self.features, ignored=ignored).ordered_entities
+            ordered_entities = FeatureTree(self.entityset, self.features, 0, ignored=ignored).ordered_entities
         else:
             ordered_entities = self.feature_tree.ordered_entities
 

@@ -2,7 +2,10 @@ import pandas as pd
 
 from .deep_feature_synthesis import DeepFeatureSynthesis
 
-from featuretools.computational_backends import calculate_feature_matrix
+from featuretools.computational_backends import (
+    calculate_feature_matrix,
+    FeatureTree
+)
 from featuretools.entityset import EntitySet
 
 
@@ -165,6 +168,7 @@ def dfs(entities=None,
                            target_entity="transactions",
                            features_only=True)
     '''
+    global feature_tree
     if not isinstance(entityset, EntitySet):
         entityset = EntitySet("dfs", entities, relationships)
 
@@ -181,34 +185,36 @@ def dfs(entities=None,
                                       max_features=max_features,
                                       seed_features=seed_features)
 
-    features = dfs_object.build_features(verbose=verbose)
+    features, all_features = dfs_object.build_features(verbose=verbose)
 
     if features_only:
         return features
+    feature_tree = FeatureTree(entityset, features=features, maxdepth=max_depth)
+    # if isinstance(cutoff_time, pd.DataFrame):
+    #     feature_matrix = calculate_feature_matrix(features,
+    #                                               entityset=entityset,
+    #                                               cutoff_time=cutoff_time,
+    #                                               training_window=training_window,
+    #                                               approximate=approximate,
+    #                                               cutoff_time_in_index=cutoff_time_in_index,
+    #                                               save_progress=save_progress,
+    #                                               chunk_size=chunk_size,
+    #                                               n_jobs=n_jobs,
+    #                                               dask_kwargs=dask_kwargs,
+    #                                               verbose=verbose)
+    # else:
+    #     feature_matrix = calculate_feature_matrix(features,
+    #                                               entityset=entityset,
+    #                                               cutoff_time=cutoff_time,
+    #                                               instance_ids=instance_ids,
+    #                                               training_window=training_window,
+    #                                               approximate=approximate,
+    #                                               cutoff_time_in_index=cutoff_time_in_index,
+    #                                               save_progress=save_progress,
+    #                                               chunk_size=chunk_size,
+    #                                               n_jobs=n_jobs,
+    #                                               dask_kwargs=dask_kwargs,
+    #                                               verbose=verbose)
 
-    if isinstance(cutoff_time, pd.DataFrame):
-        feature_matrix = calculate_feature_matrix(features,
-                                                  entityset=entityset,
-                                                  cutoff_time=cutoff_time,
-                                                  training_window=training_window,
-                                                  approximate=approximate,
-                                                  cutoff_time_in_index=cutoff_time_in_index,
-                                                  save_progress=save_progress,
-                                                  chunk_size=chunk_size,
-                                                  n_jobs=n_jobs,
-                                                  dask_kwargs=dask_kwargs,
-                                                  verbose=verbose)
-    else:
-        feature_matrix = calculate_feature_matrix(features,
-                                                  entityset=entityset,
-                                                  cutoff_time=cutoff_time,
-                                                  instance_ids=instance_ids,
-                                                  training_window=training_window,
-                                                  approximate=approximate,
-                                                  cutoff_time_in_index=cutoff_time_in_index,
-                                                  save_progress=save_progress,
-                                                  chunk_size=chunk_size,
-                                                  n_jobs=n_jobs,
-                                                  dask_kwargs=dask_kwargs,
-                                                  verbose=verbose)
-    return feature_matrix, features
+
+    return features, all_features, feature_tree

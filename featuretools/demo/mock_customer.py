@@ -5,7 +5,7 @@ from builtins import range
 import pandas as pd
 from numpy import random
 from numpy.random import choice
-
+import numpy as np
 import featuretools as ft
 from featuretools.variable_types import Categorical
 
@@ -15,13 +15,14 @@ def load_mock_customer(n_customers=5, n_products=5, n_sessions=35, n_transaction
     """Return dataframes of mock customer data"""
 
     random.seed(random_seed)
-
     customers_df = pd.DataFrame({"customer_id": range(1, n_customers + 1)})
     customers_df["zip_code"] = choice(["60091", "02139"], n_customers,)
     customers_df["join_date"] = pd.date_range('1/1/2008', periods=n_customers, freq='50d')  # todo make these less regular
+    customers_df["points"] = choice([1, 2, 3], n_customers)
 
     products_df = pd.DataFrame({"product_id": pd.Categorical(range(1, n_products + 1))})
     products_df["brand"] = choice(["A", "B", "C"], n_products)
+    products_df["points"] = choice([1, 2, 3], n_products)
 
     sessions_df = pd.DataFrame({"session_id": range(1, n_sessions + 1)})
     sessions_df["customer_id"] = choice(customers_df["customer_id"], n_sessions)
@@ -48,7 +49,7 @@ def load_mock_customer(n_customers=5, n_products=5, n_sessions=35, n_transaction
                                       dataframe=transactions_df,
                                       index="transaction_id",
                                       time_index="transaction_time",
-                                      variable_types={"product_id": ft.variable_types.Categorical})
+                                      variable_types={"product_id": ft.variable_types.Categorical, "index": ft.variable_types.Text})
 
         es = es.entity_from_dataframe(entity_id="products",
                                       dataframe=products_df,
