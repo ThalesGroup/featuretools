@@ -111,6 +111,9 @@ class FeatureTree(object):
             index = level
             self.table_feature_operations_mapping_dag[level] = {}
             if index in self.table_feature_operations_mapping:
+                if (len(self.all_paths_in_reverse) == 1) and (not self.all_paths_in_reverse[0]):
+                    if self.target_eid in self.table_feature_operations_mapping[index]:
+                        self.table_feature_operations_mapping_dag[level][self.target_eid] = self.table_feature_operations_mapping[index][self.target_eid].keys()
                 for r_list in self.all_paths_in_reverse:
                     for r in r_list:
                         if r.child_entity.id in self.table_feature_operations_mapping[index]:
@@ -157,9 +160,9 @@ class FeatureTree(object):
                 self._populate_table_feature_operation(past_feature, feat, (index-1))
             past_feature = feat
             index = index+1
-        if index == 1:
-            index = 0
-        self._populate_table_feature_operation(past_feature, f, index)
+        #if index == 1:
+        #    index = 0
+        self._populate_table_feature_operation(past_feature, f, index-1)
 
     def _populate_table_feature_operation(self, past_feature, current_feature, level):
         if level not in self.table_feature_operations_mapping:
