@@ -202,6 +202,15 @@ class Absolute(TransformPrimitive):
     def get_function_name(self):
         return u"Absolute"
 
+class PreviousRowTimeDiff(TransformPrimitive):
+    """Transform a Datetime feature into time difference."""
+    name = "previousrowtimediff"
+    input_types = [Datetime]
+    return_type = Numeric
+
+    def get_function_name(self):
+        return u"PreviousRowTimeDiff"
+
 class TimeSincePrevious(TransformPrimitive):
     """Compute the time since the previous instance."""
     name = "time_since_previous"
