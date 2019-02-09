@@ -155,7 +155,7 @@ class DeepFeatureSynthesis(object):
             trans_primitives = [ftypes.Day, ftypes.Year, ftypes.Years, ftypes.Month,ftypes.Months,ftypes.Weekend,ftypes.Diff,ftypes.Not,
                                 ftypes.Weekday, ftypes.Haversine,ftypes.IsNull, ftypes.IsIn,ftypes.Absolute,ftypes.TimeSincePrevious,ftypes.TimeSinceLast,
                                 ftypes.Days,ftypes.DaysSince,ftypes.Hour, ftypes.Hours, ftypes.Second, ftypes.Seconds,ftypes.Percentile,ftypes.Latitude,
-                                ftypes.Longitude, ftypes.NumWords, ftypes.NumCharacters, ftypes.Log, ftypes.PreviousRowTimeDiff]  # ftypes.TimeSince
+                                ftypes.Longitude, ftypes.NumWords, ftypes.NumCharacters, ftypes.Log, ftypes.PreviousRowTimeDiff, ftypes.MonthDay, ftypes.DayHour]  # ftypes.TimeSince
         # if trans_primitives is None:
         #     trans_primitives = []  # ftypes.TimeSince
         self.trans_primitives = []

@@ -399,6 +399,22 @@ class Year(DatetimeUnitBasePrimitive):
     def get_function_name(self):
         return u"Year"
 
+class DayHour(DatetimeUnitBasePrimitive):
+    """Transform a Datetime feature into the year."""
+    name = "dayhour"
+
+
+    def get_function_name(self):
+        return u"DayHour"
+
+class MonthDay(DatetimeUnitBasePrimitive):
+    """Transform a Datetime feature into the year."""
+    name = "monthday"
+
+
+    def get_function_name(self):
+        return u"MonthDay"
+
 class Years(TimedeltaUnitBasePrimitive):
     """Transform a Timedelta feature into the number of years."""
     name = "years"
