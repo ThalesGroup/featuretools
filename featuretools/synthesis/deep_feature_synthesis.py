@@ -134,7 +134,7 @@ class DeepFeatureSynthesis(object):
 
         if agg_primitives is None:
             agg_primitives = [ftypes.Sum, ftypes.Stddev, ftypes.Max, ftypes.Skew,ftypes.NumTrue,ftypes.PercentTrue,ftypes.Skew,ftypes.Any,ftypes.All,
-                              ftypes.Min, ftypes.Avg, ftypes.Count, ftypes.ValueCount, ftypes.IndicatorCount, ftypes.NMostCommon, ftypes.Median,
+                              ftypes.Min, ftypes.Avg, ftypes.Count, ftypes.NMostCommon, ftypes.Median,
                               ftypes.TimeSinceLast,ftypes.Trend,
                               ftypes.PercentTrue, ftypes.NUniq, ftypes.Mode, ftypes.Variance, ftypes.First, ftypes.Last]
         # if agg_primitives is None:
