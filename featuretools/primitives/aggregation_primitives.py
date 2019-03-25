@@ -84,6 +84,20 @@ class Variance(AggregationPrimitive):
     def get_function_name(self):
         return u"VARIANCE"
 
+class Mean(AggregationPrimitive):
+    """Computes the average value of a numeric feature."""
+    name = "avg"
+    input_types = [Numeric]
+    return_type = Numeric
+
+    # p todo: handle nulls
+    def get_function(self):
+        return np.nanmean
+
+    def get_function_name(self):
+        return u"Mean"
+
+
 class Avg(AggregationPrimitive):
     """Computes the average value of a numeric feature."""
     name = "avg"
