@@ -351,7 +351,7 @@ def test_custom_primitive_multiple_inputs(es):
     fm, features = dfs(entityset=es,
                        target_entity="sessions",
                        agg_primitives=[MeanSunday],
-                       trans_primitives=[])
+                       trans_primitives=[], features_tree_only=False)
     mean_sunday_value = pd.Series([None, None, None, 2.5, 7, None])
     iterator = zip(fm["MEAN_SUNDAY(log.value, datetime)"], mean_sunday_value)
     for x, y in iterator:
@@ -363,7 +363,7 @@ def test_custom_primitive_multiple_inputs(es):
                        target_entity="sessions",
                        agg_primitives=[MeanSunday],
                        trans_primitives=[],
-                       where_primitives=[MeanSunday])
+                       where_primitives=[MeanSunday], features_tree_only=False)
     where_feat = "MEAN_SUNDAY(log.value, datetime WHERE priority_level = 0)"
     for x, y in zip(fm[where_feat], mean_sunday_value_priority_0):
         assert ((pd.isnull(x) and pd.isnull(y)) or (x == y))

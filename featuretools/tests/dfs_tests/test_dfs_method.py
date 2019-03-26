@@ -38,7 +38,7 @@ def test_accepts_cutoff_time_df(entities, relationships):
     feature_matrix, features = dfs(entities=entities,
                                    relationships=relationships,
                                    target_entity="transactions",
-                                   cutoff_time=cutoff_times_df)
+                                   cutoff_time=cutoff_times_df, features_tree_only=False)
     assert len(feature_matrix.index) == 3
     assert len(feature_matrix.columns) == len(features)
 
@@ -47,7 +47,7 @@ def test_accepts_single_cutoff_time(entities, relationships):
     feature_matrix, features = dfs(entities=entities,
                                    relationships=relationships,
                                    target_entity="transactions",
-                                   cutoff_time=20)
+                                   cutoff_time=20, features_tree_only=False)
     assert len(feature_matrix.index) == 6
     assert len(feature_matrix.columns) == len(features)
 
@@ -56,7 +56,7 @@ def test_accepts_no_cutoff_time(entities, relationships):
     feature_matrix, features = dfs(entities=entities,
                                    relationships=relationships,
                                    target_entity="transactions",
-                                   instance_ids=[1, 2, 3, 5, 6])
+                                   instance_ids=[1, 2, 3, 5, 6], features_tree_only=False)
     assert len(feature_matrix.index) == 5
     assert len(feature_matrix.columns) == len(features)
 
@@ -69,7 +69,7 @@ def test_ignores_instance_ids_if_cutoff_df(entities, relationships):
                                    relationships=relationships,
                                    target_entity="transactions",
                                    cutoff_time=cutoff_times_df,
-                                   instance_ids=instance_ids)
+                                   instance_ids=instance_ids, features_tree_only=False)
     assert len(feature_matrix.index) == 3
     assert len(feature_matrix.columns) == len(features)
 
@@ -82,7 +82,7 @@ def test_approximate_features(entities, relationships):
                                    target_entity="transactions",
                                    cutoff_time=cutoff_times_df,
                                    approximate=5,
-                                   cutoff_time_in_index=True)
+                                   cutoff_time_in_index=True, features_tree_only=False)
     direct_agg_feat_name = 'cards.PERCENT_TRUE(transactions.fraud)'
     assert len(feature_matrix.index) == 6
     assert len(feature_matrix.columns) == len(features)
@@ -111,7 +111,7 @@ def test_all_variables(entities, relationships):
                                    allowed_paths=None,
                                    ignore_entities=None,
                                    ignore_variables=None,
-                                   seed_features=None)
+                                   seed_features=None, features_tree_only=False)
     assert len(feature_matrix.index) == 3
     assert len(feature_matrix.columns) == len(features)
 
@@ -120,7 +120,7 @@ def test_features_only(entities, relationships):
     features = dfs(entities=entities,
                    relationships=relationships,
                    target_entity="transactions",
-                   features_only=True)
+                   features_only=True, features_tree_only=False)
     assert len(features) > 0
 
 
@@ -130,7 +130,7 @@ def test_dask_kwargs(entities, relationships):
     feature_matrix, features = dfs(entities=entities,
                                    relationships=relationships,
                                    target_entity="transactions",
-                                   cutoff_time=cutoff_times_df)
+                                   cutoff_time=cutoff_times_df, features_tree_only=False)
 
     with cluster() as (scheduler, [a, b]):
         dask_kwargs = {'cluster': scheduler['address']}
@@ -138,7 +138,7 @@ def test_dask_kwargs(entities, relationships):
                                            relationships=relationships,
                                            target_entity="transactions",
                                            cutoff_time=cutoff_times_df,
-                                           dask_kwargs=dask_kwargs)
+                                           dask_kwargs=dask_kwargs, features_tree_only=False)
     assert features == features_2
     for column in feature_matrix:
         for x, y in zip(feature_matrix[column], feature_matrix_2[column]):

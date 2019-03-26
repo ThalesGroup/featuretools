@@ -29,6 +29,6 @@ def test_load_retail_diff():
 
 def test_mock_customer():
     es = load_mock_customer(return_entityset=True)
-    fm, fl = dfs(entityset=es, target_entity="customers", max_depth=3)
+    fm, fl = dfs(entityset=es, target_entity="customers", max_depth=3, features_tree_only=False)
     for feature in fl:
         assert feature.get_name() in fm.columns

@@ -101,7 +101,7 @@ def test_cfm_approximate_correct_ordering():
                         new_entity_id="flights",
                         index="flight_id",
                         make_time_index=True)
-    features = dfs(entityset=es, target_entity='trips', features_only=True)
+    features = dfs(entityset=es, target_entity='trips', features_only=True, features_tree_only=False)
     flight_features = [feature for feature in features
                        if isinstance(feature, DirectFeature) and
                        isinstance(feature.base_features[0],
