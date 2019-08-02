@@ -86,7 +86,7 @@ class Variance(AggregationPrimitive):
 
 class Mean(AggregationPrimitive):
     """Computes the average value of a numeric feature."""
-    name = "avg"
+    name = "mean"
     input_types = [Numeric]
     return_type = Numeric
 
