@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 from setuptools.command.build_ext import build_ext as _build_ext
-
+ from package import Package
 
 # Bootstrap numpy install
 class build_ext(_build_ext):
@@ -34,7 +34,7 @@ setup(
     install_requires=open('requirements.txt').readlines(),
     setup_requires=open('setup-requirements.txt').readlines(),
     python_requires='>=2.7, <4',
-    cmdclass={'build_ext': build_ext},
+    cmdclass={'build_ext': build_ext, 'package': Package},
     test_suite='featuretools/tests',
     tests_require=open('test-requirements.txt').readlines(),
     keywords='feature engineering data science machine learning',
